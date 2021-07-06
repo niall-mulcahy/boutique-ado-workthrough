@@ -49,19 +49,20 @@ def checkout(request):
                                 quantity=quantity,
                                 product_size=size,
                             )
-                            order_line__item.save()
+                            order_line_item.save()
                 except Product.DoesNotExist:
                     messages.error(request, (
-                        "One of the products in your bag wasn't found it our database. "
+                        "One of the products in your bag wasn't found in our database. "
                         "Please call us for assistance!")
                     )
                     order.delete()
                     return redirect(reverse('view_bag'))
-            request.session['save-info'] = 'save-info' in request.POST
+
+            request.session['save_info'] = 'save-info' in request.POST
             return redirect(reverse('checkout_success', args=[order.order_number]))
         else:
             messages.error(request, 'There was an error with your form. \
-                Please double check your information')
+                Please double check your information.')
     else:
         bag = request.session.get('bag', {})
         if not bag:
@@ -77,8 +78,6 @@ def checkout(request):
             currency=settings.STRIPE_CURRENCY,
         )
 
-        print(intent)
-
         order_form = OrderForm()
 
     if not stripe_public_key:
@@ -89,7 +88,7 @@ def checkout(request):
     context = {
         'order_form': order_form,
         'stripe_public_key': stripe_public_key,
-        'client_secret': 'secret key',
+        'client_secret': intent.client_secret,
     }
 
     return render(request, template, context)
@@ -104,13 +103,12 @@ def checkout_success(request, order_number):
     messages.success(request, f'Order successfully processed! \
         Your order number is {order_number}. A confirmation \
         email will be sent to {order.email}.')
+
     if 'bag' in request.session:
         del request.session['bag']
 
     template = 'checkout/checkout_success.html'
     context = {
-        'order': order
+        'order': order,
     }
-    
     return render(request, template, context)
-    
